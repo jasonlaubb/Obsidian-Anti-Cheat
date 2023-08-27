@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/ravriv/Obsidian-Anti-Cheat/assets/125807666/8dc70e06-74d9-4741-bc78-58e551617b7d" alt="pack_icon">
+  <img src="https://github.com/ravriv/Obsidian-Anti-Cheat/assets/125807666/8dc70e06-74d9-4741-bc78-58e551617b7d" alt="pack_icon" width="100">
 </div>
 
 <h1 align="center">Obsidian Anti Cheat</h1>
