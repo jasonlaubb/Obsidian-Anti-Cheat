@@ -1,0 +1,55 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "§uObsidian Anti Cheat",
+    "description": "§71.20.15",
+    "uuid": "4c1004cf-9924-409b-867f-a2c33439c892",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      10
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "c4912d17-c0d7-45a5-b962-e9c7453ca770",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "c7c16f6e-b6fb-45a5-a62d-8607cff459b8",
+      "version": [
+        0,
+        0,
+        1
+      ],
+      "entry": "scripts/index.js"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "https://mcpedl.com/user/ravriv"
+    ]
+  },
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.4.0-beta"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.2.0-beta"
+    }
+  ]
+}
