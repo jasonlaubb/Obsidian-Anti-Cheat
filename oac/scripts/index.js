@@ -211,7 +211,7 @@ world.afterEvents.entityHitEntity.subscribe(({ damagingEntity, hitEntity }) => {
 });
 
 world.afterEvents.entityDie.subscribe((event) => {
-    if (world.scoreboard.getObjective('oac:death-coordinates-enabled')) return;
+    if (!world.scoreboard.getObjective('oac:death-coordinates-enabled')) return;
 
     const { deadEntity } = event;
 
