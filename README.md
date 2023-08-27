@@ -13,7 +13,7 @@ Obsidian Anti-Cheat is like a close relative to Paradox Anti-Cheat, but with its
 
 <h2 align="center">Getting Started</h2>
 <p align="center">
-Download <strong>Obsidian Anti-Cheat</strong> from [mcpedl.com](link-to-mcpedl).
+Download <strong>Obsidian Anti-Cheat</strong> from <a href="link-to-mcpedl">mcpedl.com</a>.
 </p>
 
 <hr>
