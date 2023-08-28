@@ -6,14 +6,14 @@
 
 <p align="center">Updated for 1.20.15</p>
 <p align="center">
-Obsidian Anti-Cheat is like a close relative to Paradox Anti-Cheat, but with its own thing going on. We're all about fairness, and that's why we operate under the AGPL-3.0 license. Obsidian was created Simple.
+Obsidian Anti-Cheat is like a close relative to Paradox Anti-Cheat, but it was created simple and no watermark. We're all about fairness, and that's why we operate under the AGPL-3.0 license.
 </p>
 
 <hr>
 
 <h2 align="center">Getting Started</h2>
 <p align="center">
-Download <strong>Obsidian Anti-Cheat</strong> from <a href="https://mcpedl.com/obsidian-anti-cheat/">mcpedl.com</a>.
+Download <strong>Obsidian Anti-Cheat</strong> from <a href="https://mcpedl.com/obsidian-anti-cheat/">mcpedl.com</a>
 </p>
 
 <hr>
