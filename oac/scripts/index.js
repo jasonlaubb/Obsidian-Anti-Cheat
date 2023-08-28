@@ -3,10 +3,6 @@ import { mainMenu } from "./assets/ui.js";
 import config from "./assets/config.js";
 
 const playerData = new Map();
-const cps = new Map();
-const cpsCooldown = new Map();
-const chatWarnings = new Map();
-const lastMessageTimes = new Map();
 
 system.runInterval(() => {
     if (!world.scoreboard.getObjective('oac:anti-fly-enabled')) return;
@@ -189,19 +185,23 @@ const antiKillAura = (damagingEntity, hitEntity) => {
     }
 };
 
-const antiAutoClicker = (damagingEntity) => {
+const antiAutoClicker = (player) => {
     const currentTime = Date.now();
-    const lastClickTime = cps.get(damagingEntity);
+    const clickKey = `${player.id}-clickData`;
+    const lastData = playerData.get(clickKey) || { lastClickTime: 0, cpsCooldown: null };
 
-    if (!damagingEntity.hasTag("pvp-off") && lastClickTime && currentTime - lastClickTime < 50 && config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime) >= config.antiAutoClicker.maxClicksPerSecond) {
-        damagingEntity.addTag("pvp-off");
-        world.sendMessage(`§l§uOAC§r >§4 ${damagingEntity.name}§c has detected using Auto Clicker!\n§rCPS: ${config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime)}`);
+    const lastClickTime = lastData.lastClickTime;
+    const cpsCooldown = lastData.cpsCooldown;
+
+    if (!player.hasTag("pvp-off") && lastClickTime && currentTime - lastClickTime < 50 && config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime) >= config.antiAutoClicker.maxClicksPerSecond) {
+        player.addTag("pvp-off");
+        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected using Auto Clicker!\n§rCPS: ${config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime)}`);
     }
 
-    cps.set(damagingEntity, currentTime);
+    playerData.set(clickKey, { lastClickTime: currentTime, cpsCooldown });
 
-    if (cpsCooldown.has(damagingEntity.name)) system.clearRun(cpsCooldown.get(damagingEntity.name));
-    cpsCooldown.set(damagingEntity.name, system.runTimeout(() => damagingEntity.removeTag("pvp-off"), config.antiAutoClicker.timeout));
+    if (cpsCooldown) system.clearRun(cpsCooldown);
+    playerData.get(clickKey).cpsCooldown = system.runTimeout(() => player.removeTag("pvp-off"), config.antiAutoClicker.timeout);
 };
 
 world.afterEvents.entityHitEntity.subscribe(({ damagingEntity, hitEntity }) => {
@@ -229,10 +229,12 @@ const checkSpam = (player, behavior) => {
     player.triggerEvent("run:kick");
 };
 
-world.afterEvents.chatSend.subscribe((event) => {
-    const { sender: player, message } = event;
+world.afterEvents.chatSend.subscribe(({ sender: player, message }) => {
 
     if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.isOp()) return;
+
+    const spamKey = `${player.id}-spamData`;
+    const data = playerData.get(spamKey) || { lastMessageTimes: [], warnings: 0 };
 
     if (player.hasTag('five') && player.isOnGround && !player.isJumping) checkSpam(player, "sending messages while moving");
     if (player.hasTag('one') && !player.getEffect("mining_fatigue")) checkSpam(player, "sending messages while swinging their hand");
@@ -245,33 +247,37 @@ world.afterEvents.chatSend.subscribe((event) => {
     }
 
     const currentTime = Date.now();
-    const times = lastMessageTimes.get(player.name) || [];
-    times.push(currentTime);
+    data.lastMessageTimes.push(currentTime);
 
-    if (times.length > config.antiSpam.maxMessagesPerSecond) times.shift();
-
-    lastMessageTimes.set(player.name, times);
-
-    if (times.length >= config.antiSpam.maxMessagesPerSecond && times[times.length - 1] - times[0] < config.antiSpam.timer) {
-        antiSpam(player);
+    if (data.lastMessageTimes.length > config.antiSpam.maxMessagesPerSecond) {
+        data.lastMessageTimes.shift();
     }
+
+    if (data.lastMessageTimes.length >= config.antiSpam.maxMessagesPerSecond &&
+        data.lastMessageTimes[data.lastMessageTimes.length - 1] - data.lastMessageTimes[0] < config.antiSpam.timer) {
+        antiSpam(player, data, spamKey);
+    }
+
+    playerData.set(spamKey, data);
 });
 
-function antiSpam(player) {
-    const warnings = chatWarnings.get(player.name) || 0;
-    chatWarnings.set(player.name, warnings + 1);
+const antiSpam = (player, data, spamKey) => {
+    data.warnings++;
 
-    if (warnings + 1 <= config.antiSpam.kickThreshold) {
-        player.sendMessage(`§cPlease send messages slowly!\n§8 Warning ${warnings + 1} out of ${config.antiSpam.kickThreshold}`);
+    if (data.warnings <= config.antiSpam.kickThreshold) {
+        player.sendMessage(`§cPlease send messages slowly!\n§8 Warning ${data.warnings} out of ${config.antiSpam.kickThreshold}`);
     }
 
-    system.runTimeout(() => chatWarnings.delete(player.name), config.antiSpam.timeout);
+    system.runTimeout(() => {
+        data.warnings = 0;
+        playerData.set(spamKey, data);
+    }, config.antiSpam.timeout);
 
-    if (warnings + 1 > config.antiSpam.kickThreshold) {
+    if (data.warnings > config.antiSpam.kickThreshold) {
         player.triggerEvent("run:kick");
         world.sendMessage(`§4${player.name}§c has been kicked for spamming`);
     }
-}
+};
 
 world.beforeEvents.chatSend.subscribe((event) => {
     const { message: message, sender: player } = event;
@@ -287,30 +293,25 @@ world.beforeEvents.chatSend.subscribe((event) => {
     }
 });
 
-world.afterEvents.itemUse.subscribe((event) => {
-    if (event.itemStack.typeId !== "minecraft:chorus_fruit" || !event.source.isOp()) return;
-    system.run(() => mainMenu(event.source));
+world.afterEvents.itemUse.subscribe(({ itemStack: item, source: player }) => {
+    if (player.typeId === "minecraft:player" && player.isOp() && item.typeId === "minecraft:chorus_fruit") {
+        mainMenu(player);
+    }
 });
 
 world.afterEvents.playerLeave.subscribe(({ playerId }) => {
-    if (
-        world.scoreboard.getObjective('oac:anti-speed-enabled') ||
-        world.scoreboard.getObjective('oac:anti-fly-enabled') ||
-        world.scoreboard.getObjective('oac:anti-jesus-enabled') ||
-        world.scoreboard.getObjective('oac:anti-scaffold-enabled')
-    ) {
+    const configObjectives = [
+        'oac:anti-speed-enabled',
+        'oac:anti-fly-enabled',
+        'oac:anti-jesus-enabled',
+        'oac:anti-scaffold-enabled',
+        'oac:anti-autoclicker-enabled',
+        'oac:anti-killaura-enabled',
+        'oac:anti-spam-enabled'
+    ];
+
+    if (configObjectives.some(objective => world.scoreboard.getObjective(objective))) {
         playerData.delete(playerId);
-    }
-
-    if (
-        world.scoreboard.getObjective('oac:anti-autoclicker-enabled') ||
-        world.scoreboard.getObjective('oac:anti-killaura-enabled')
-    ) {
-        [cps, cpsCooldown].forEach(map => map.delete(playerId));
-    }
-
-    if (world.scoreboard.getObjective('oac:anti-spam-enabled')) {
-        [chatWarnings, lastMessageTimes].forEach(map => map.delete(playerId));
     }
 });
 
