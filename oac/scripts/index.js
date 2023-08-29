@@ -102,48 +102,23 @@ world.afterEvents.entityHurt.subscribe(({ hurtEntity }) => {
     }
 });
 
-system.runInterval(() => {
-    if (!world.scoreboard.getObjective('oac:anti-jesus-enabled')) return;
-    world.getPlayers({ excludeGameModes: [GameMode.creative, GameMode.spectator] })
-        .filter(player => !player.isOp())
-        .forEach(player => {
-            const { x, y, z } = player.location;
-            const blockBelow = player.dimension.getBlock({ x, y: y - 1, z });
-            const isOnWater = blockBelow.typeId === "minecraft:water";
-            const isSwimmingOrInWater = player.isSwimming || player.isInWater || player.isJumping || player.isFlying || player.hasTag("three");
-            const antiJesusKey = `${player.id}-checkJesus`;
-
-            if (!isOnWater || isSwimmingOrInWater) {
-                if (player.isOnGround && playerData.has(antiJesusKey)) {
-                    playerData.delete(antiJesusKey);
-                }
-                return;
-            }
-
-            const coords = playerData.get(antiJesusKey) || {};
-            coords.x = x;
-            coords.y = y;
-            coords.z = z;
-            playerData.set(antiJesusKey, coords);
-
-            const prevBlock = player.dimension.getBlock({ x: coords.x, y: coords.y, z: coords.z });
-            const isWater = prevBlock.typeId === "minecraft:water";
-            const isSolidBlock = !prevBlock.isAir() && !prevBlock.isLiquid();
-
-            if (isWater && !isSolidBlock) {
-                teleportPlayerBelow(player, coords.x, coords.y, coords.z);
-            }
-        });
-}, 20);
-
-function teleportPlayerBelow(player, x, y, z) {
-    const blockBelow = player.dimension.getBlock({ x, y: y - 1, z });
-    if (blockBelow.typeId === "minecraft:water") {
-        player.teleport({ x, y: y - 1, z }, { dimension: player.dimension });
-        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected using Jesus`);
-        player.applyDamage(6);
+world.afterEvents.entityHurt.subscribe((event) => {
+    if (!event.hurtEntity.isValid()) {
+        return;
     }
-}
+
+    const playerName = event.hurtEntity.name;
+    const antiSpeedKey = `${playerName}-checkSpeed`;
+
+    if (playerData.has(antiSpeedKey)) {
+        const playerInfo = playerData.get(antiSpeedKey);
+
+        if (playerInfo.type === 'speedData' && playerName !== event.source.name) {
+            playerInfo.lastHitTimestamp = Date.now();
+            playerData.delete(antiSpeedKey);
+        }
+    }
+});
 
 world.afterEvents.blockPlace.subscribe(({ block, player, dimension }) => {
     if (!world.scoreboard.getObjective('oac:anti-scaffold-enabled') || player.isOp() || !world.getPlayers({ excludeGameModes: [GameMode.creative], name: player.name }).length) return;
@@ -175,12 +150,27 @@ world.afterEvents.blockPlace.subscribe(({ block, player, dimension }) => {
 
 const getVector = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z });
 const getNDP = (v1, v2) => (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z) / (Math.sqrt(v2.x ** 2 + v2.y ** 2 + v2.z ** 2) * Math.sqrt(v1.x ** 2 + v1.y ** 2 + v1.z ** 2));
-const isAttackerOutOfTargetView = (attacker, target) => attacker && target && Math.acos(getNDP(attacker.getViewDirection(), getVector(attacker.location, target.location))) * (180 / Math.PI) > config.antiKillAura.minAngle;
+const isAttackerOutOfTargetView = (attacker, target) => {
+    if (attacker && target) {
+        const angleInDegrees = Math.acos(getNDP(attacker.getViewDirection(), getVector(attacker.location, target.location))) * (180 / Math.PI);
+        const distance = Math.sqrt(
+            (target.location.x - attacker.location.x) ** 2 +
+            (target.location.y - attacker.location.y) ** 2 +
+            (target.location.z - attacker.location.z) ** 2
+        );
+
+        return angleInDegrees > config.antiKillAura.minAngle && distance >= 2;
+    }
+    return false;
+};
 
 const antiKillAura = (damagingEntity, hitEntity) => {
     if (!damagingEntity.hasTag("pvp-off") && isAttackerOutOfTargetView(damagingEntity, hitEntity)) {
         damagingEntity.addTag("pvp-off");
-        world.sendMessage(`§l§uOAC§r >§4 ${damagingEntity.name}§c has detected using Kill Aura!\n§rAngle: ${Math.floor(Math.acos(getNDP(damagingEntity.getViewDirection(), getVector(damagingEntity.location, hitEntity.location))) * (180 / Math.PI))}°)`);
+        const angleInDegrees = Math.floor(
+            Math.acos(getNDP(damagingEntity.getViewDirection(), getVector(damagingEntity.location, hitEntity.location))) * (180 / Math.PI)
+        );
+        world.sendMessage(`§l§uOAC§r >§4 ${damagingEntity.name}§c has detected using Kill Aura!\n§rAngle: ${angleInDegrees}°`);
         system.runTimeout(() => damagingEntity.removeTag("pvp-off"), config.antiKillAura.timeout);
     }
 };
@@ -195,7 +185,8 @@ const antiAutoClicker = (player) => {
 
     if (!player.hasTag("pvp-off") && lastClickTime && currentTime - lastClickTime < 50 && config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime) >= config.antiAutoClicker.maxClicksPerSecond) {
         player.addTag("pvp-off");
-        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected using Auto Clicker!\n§rCPS: ${config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime)}`);
+        const cps = config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime);
+        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected using Auto Clicker!\n§rCPS: ${cps.toFixed(2)}`);
     }
 
     playerData.set(clickKey, { lastClickTime: currentTime, cpsCooldown });
@@ -303,7 +294,6 @@ world.afterEvents.playerLeave.subscribe(({ playerId }) => {
     const configObjectives = [
         'oac:anti-speed-enabled',
         'oac:anti-fly-enabled',
-        'oac:anti-jesus-enabled',
         'oac:anti-scaffold-enabled',
         'oac:anti-autoclicker-enabled',
         'oac:anti-killaura-enabled',
