@@ -7,7 +7,6 @@ const config = {
     },
 
     antiKillAura: {
-        minDistance: 2, // 2 blocks
         minAngle: 90, // 90 degrees
         timeout: 400 // 10 seconds = 400 ticks, pvp-off tag will be removed after 10 seconds
     },
