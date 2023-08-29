@@ -4,7 +4,6 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 const settings = [
     { name: "Anti Fly", scoreboard: "oac:anti-fly-enabled" },
     { name: "Anti Speed", scoreboard: "oac:anti-speed-enabled" },
-    { name: "Anti Jesus", scoreboard: "oac:anti-jesus-enabled" },
     { name: "Anti Scaffold", scoreboard: "oac:anti-scaffold-enabled" },
     { name: "Anti Auto Clicker", scoreboard: "oac:anti-autoclicker-enabled" },
     { name: "Anti Kill Aura", scoreboard: "oac:anti-killaura-enabled" },
