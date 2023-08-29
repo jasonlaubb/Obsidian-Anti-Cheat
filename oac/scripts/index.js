@@ -95,13 +95,6 @@ system.runInterval(() => {
         });
 }, 2);
 
-world.afterEvents.entityHurt.subscribe(({ hurtEntity }) => {
-    if (hurtEntity.isValid() && playerData.has(hurtEntity.id)) {
-        const playerInfo = playerData.get(hurtEntity.id);
-        playerInfo.lastHitTimestamp = Date.now();
-    }
-});
-
 world.afterEvents.entityHurt.subscribe((event) => {
     if (!event.hurtEntity.isValid()) {
         return;
