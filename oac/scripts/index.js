@@ -5,48 +5,71 @@ import config from "./assets/config.js";
 const playerData = new Map();
 
 system.runInterval(() => {
-    if (!world.scoreboard.getObjective('oac:anti-fly-enabled')) return;
-    world.getPlayers({ excludeGameModes: [GameMode.creative, GameMode.spectator] })
-        .filter(player => !player.isOp())
-        .forEach(player => {
-            const { id, location: { x, y, z }, dimension, isOnGround, isGliding, isInWater, isSwimming, isFalling, isJumping } = player;
-            const currentTime = Date.now();
-            const X = Math.trunc(x);
-            const Y = Math.trunc(y);
-            const Z = Math.trunc(z);
-            const antiFlyKey = `${id}-checkFly`;
+    const frozenPlayers = world.scoreboard.getObjective("oac:frozenList").getParticipants();
 
-            if (isOnGround || isGliding || isInWater || isSwimming) {
-                if (!playerData.has(antiFlyKey)) {
-                    playerData.set(antiFlyKey, {});
+    if (frozenPlayers.length > 0) {
+        world.getPlayers({ excludeTags: ["admin"] }).forEach(player => {
+            const freezeKey = `${player.id}-checkFreeze`;
+            const prevLoc = playerData.get(freezeKey) || player.location;
+
+            const { x, y, z } = player.location;
+            const distanceSquared = Math.pow(x - prevLoc.x, 2) + Math.pow(y - prevLoc.y, 2) + Math.pow(z - prevLoc.z, 2);
+
+            if (frozenPlayers.find(p => p.displayName === player.name)) {
+                if (distanceSquared > 1) {
+                    player.teleport(prevLoc);
+                    player.onScreenDisplay.setActionBar("§u§l§¶OAC >§c You are frozen");
                 }
-                playerData.get(antiFlyKey).type = 'flyData';
-                playerData.get(antiFlyKey).time = currentTime;
-                playerData.get(antiFlyKey).coords = { x: X, y: Y, z: Z };
-                return;
-            }
 
-            if (isFalling && playerData.has(antiFlyKey)) {
-                playerData.get(antiFlyKey).time = Math.max(playerData.get(antiFlyKey).time - 500, 0);
-                return;
-            }
-
-            if (!isJumping && playerData.has(antiFlyKey)) {
-                const { time, coords } = playerData.get(antiFlyKey);
-                const airTime = currentTime - time;
-
-                if (airTime >= config.antiFly.maxAirTime && isPlayerOnAir(player)) {
-                    const { x, z } = player.getVelocity();
-                    const horizontalVelocity = Math.hypot(x, z).toFixed(4);
-
-                    if (Number(horizontalVelocity) > 0) {
-                        player.teleport(coords, { dimension, facingLocation: { x: coords.x, y: coords.y - 1, z: coords.z } });
-                        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected Flying\n§rAir time: ${airTime / 1000}s`);
-                        player.applyDamage(6);
-                    }
-                }
+                playerData.set(freezeKey, player.location);
+            } else {
+                playerData.delete(freezeKey);
             }
         });
+    }
+}, 40);
+
+system.runInterval(() => {
+    if (!world.scoreboard.getObjective('oac:anti-fly-enabled')) return;
+    world.getPlayers({ excludeTags: ["admin"], excludeGameModes: [GameMode.creative, GameMode.spectator] }).forEach(player => {
+        const { id, location: { x, y, z }, dimension, isOnGround, isGliding, isInWater, isSwimming, isFalling, isJumping } = player;
+        const currentTime = Date.now();
+        const X = Math.trunc(x);
+        const Y = Math.trunc(y);
+        const Z = Math.trunc(z);
+        const antiFlyKey = `${id}-checkFly`;
+
+        if (isOnGround || isGliding || isInWater || isSwimming) {
+            if (!playerData.has(antiFlyKey)) {
+                playerData.set(antiFlyKey, {});
+            }
+            playerData.get(antiFlyKey).type = 'flyData';
+            playerData.get(antiFlyKey).time = currentTime;
+            playerData.get(antiFlyKey).coords = { x: X, y: Y, z: Z };
+            return;
+        }
+
+        if (isFalling && playerData.has(antiFlyKey)) {
+            playerData.get(antiFlyKey).time = Math.max(playerData.get(antiFlyKey).time - 500, 0);
+            return;
+        }
+
+        if (!isJumping && playerData.has(antiFlyKey)) {
+            const { time, coords } = playerData.get(antiFlyKey);
+            const airTime = currentTime - time;
+
+            if (airTime >= config.antiFly.maxAirTime && isPlayerOnAir(player)) {
+                const { x, z } = player.getVelocity();
+                const horizontalVelocity = Math.hypot(x, z).toFixed(4);
+
+                if (Number(horizontalVelocity) > 0) {
+                    player.teleport(coords, { dimension, facingLocation: { x: coords.x, y: coords.y - 1, z: coords.z } });
+                    world.sendMessage(`§u§l§¶OAC >§4 ${player.name}§c has detected Flying\n§r§l§¶Air time: ${airTime / 1000}s`);
+                    player.applyDamage(6);
+                }
+            }
+        }
+    });
 }, 20);
 
 function isPlayerOnAir({ location: { x, y, z }, dimension }) {
@@ -65,56 +88,46 @@ function isPlayerOnAir({ location: { x, y, z }, dimension }) {
 
 system.runInterval(() => {
     if (!world.scoreboard.getObjective('oac:anti-speed-enabled')) return;
-    world.getPlayers({ excludeGameModes: [GameMode.creative, GameMode.spectator] })
-        .filter(player => !player.isOp())
-        .forEach(player => {
-            const antiSpeedKey = `${player.id}-checkSpeed`;
+    world.getPlayers({ excludeTags: ["admin"], excludeGameModes: [GameMode.creative, GameMode.spectator] }).forEach(player => {
+        const antiSpeedKey = `${player.id}-checkSpeed`;
 
-            if (player.isGliding || player.getEffect("speed") || player.hasTag("three") || player.hasTag("four")) {
-                playerData.set(antiSpeedKey, { type: 'speedData', zeroSpeedLocation: player.location });
-                return;
+        if (playerData.has(`${player.id}-hurtTimeKey`) && Date.now() - playerData.get(`${player.id}-hurtTimeKey`) < 3000) {
+            return;
+        }
+
+        if (player.isGliding || player.getEffect("speed") || player.hasTag("three") || player.hasTag("four")) {
+            playerData.set(antiSpeedKey, { type: 'speedData', zeroSpeedLocation: player.location });
+            return;
+        }
+
+        const { x, z } = player.getVelocity();
+        const playerSpeedMph = Math.sqrt(x ** 2 + z ** 2) * 20 * 60 * 60 / 1609.34;
+
+        if (playerSpeedMph === 0) {
+            playerData.set(antiSpeedKey, { zeroSpeedLocation: player.location });
+        } else if (playerSpeedMph > config.antiSpeed.mphThreshold && playerData.has(antiSpeedKey)) {
+            const playerInfo = playerData.get(antiSpeedKey);
+            if (!playerInfo.highestSpeed) {
+                player.teleport(playerInfo.zeroSpeedLocation, { dimension: player.dimension, rotation: { x: 180, y: 0 } });
+                world.sendMessage(`§u§l§¶OAC >§4 ${player.name}§c has detected with Speed\n§r§l§¶${playerSpeedMph.toFixed(2)} mph`);
+                player.applyDamage(6);
+                playerInfo.highestSpeed = playerSpeedMph;
             }
-
-            const { x, z } = player.getVelocity();
-            const playerSpeedMph = Math.sqrt(x ** 2 + z ** 2) * 20 * 60 * 60 / 1609.34;
-
-            if (playerSpeedMph === 0) {
-                playerData.set(antiSpeedKey, { zeroSpeedLocation: player.location });
-            } else if (playerSpeedMph > config.antiSpeed.mphThreshold && playerData.has(antiSpeedKey)) {
-                const playerInfo = playerData.get(antiSpeedKey);
-                if (!playerInfo.highestSpeed) {
-                    player.teleport(playerInfo.zeroSpeedLocation, { dimension: player.dimension, rotation: { x: 180, y: 0 } });
-                    world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected with Speed§r\n${playerSpeedMph.toFixed(2)} mph`);
-                    player.applyDamage(6);
-                    playerInfo.highestSpeed = playerSpeedMph;
-                }
-            } else if (playerSpeedMph <= config.antiSpeed.mphThreshold && playerData.has(antiSpeedKey)) {
-                const playerInfo = playerData.get(antiSpeedKey);
-                playerInfo.highestSpeed = 0;
-            }
-        });
+        } else if (playerSpeedMph <= config.antiSpeed.mphThreshold && playerData.has(antiSpeedKey)) {
+            const playerInfo = playerData.get(antiSpeedKey);
+            playerInfo.highestSpeed = 0;
+        }
+    });
 }, 2);
 
-world.afterEvents.entityHurt.subscribe((event) => {
-    if (!event.hurtEntity.isValid()) {
-        return;
-    }
-
-    const playerName = event.hurtEntity.name;
-    const antiSpeedKey = `${playerName}-checkSpeed`;
-
-    if (playerData.has(antiSpeedKey)) {
-        const playerInfo = playerData.get(antiSpeedKey);
-
-        if (playerInfo.type === 'speedData' && playerName !== event.source.name) {
-            playerInfo.lastHitTimestamp = Date.now();
-            playerData.delete(antiSpeedKey);
-        }
+world.afterEvents.entityHurt.subscribe(event => {
+    if (event.hurtEntity instanceof Player) {
+        playerData.set(`${event.hurtEntity.id}-hurtTimeKey`, Date.now());
     }
 });
 
 world.afterEvents.blockPlace.subscribe(({ block, player, dimension }) => {
-    if (!world.scoreboard.getObjective('oac:anti-scaffold-enabled') || player.isOp() || !world.getPlayers({ excludeGameModes: [GameMode.creative], name: player.name }).length) return;
+    if (!world.scoreboard.getObjective('oac:anti-scaffold-enabled') || player.hasTag("admin") || !world.getPlayers({ excludeGameModes: [GameMode.creative], name: player.name }).length) return;
 
     const { location: { x, y, z } } = block;
     const currentTime = Date.now();
@@ -163,7 +176,7 @@ const antiKillAura = (damagingEntity, hitEntity) => {
         const angleInDegrees = Math.floor(
             Math.acos(getNDP(damagingEntity.getViewDirection(), getVector(damagingEntity.location, hitEntity.location))) * (180 / Math.PI)
         );
-        world.sendMessage(`§l§uOAC§r >§4 ${damagingEntity.name}§c has detected using Kill Aura!\n§rAngle: ${angleInDegrees}°`);
+        world.sendMessage(`§u§l§¶OAC >§4 ${damagingEntity.name}§c has detected using Kill Aura\n§r§l§¶Angle: ${angleInDegrees}°`);
         system.runTimeout(() => damagingEntity.removeTag("pvp-off"), config.antiKillAura.timeout);
     }
 };
@@ -179,7 +192,7 @@ const antiAutoClicker = (player) => {
     if (!player.hasTag("pvp-off") && lastClickTime && currentTime - lastClickTime < 50 && config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime) >= config.antiAutoClicker.maxClicksPerSecond) {
         player.addTag("pvp-off");
         const cps = config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime);
-        world.sendMessage(`§l§uOAC§r >§4 ${player.name}§c has detected using Auto Clicker!\n§rCPS: ${cps.toFixed(2)}`);
+        world.sendMessage(`§u§l§¶OAC >§4 ${player.name}§c has detected using Auto Clicker\n§r§l§¶CPS: ${cps.toFixed(2)}`);
     }
 
     playerData.set(clickKey, { lastClickTime: currentTime, cpsCooldown });
@@ -189,33 +202,19 @@ const antiAutoClicker = (player) => {
 };
 
 world.afterEvents.entityHitEntity.subscribe(({ damagingEntity, hitEntity }) => {
-    if (!(damagingEntity instanceof Player) || damagingEntity.isOp() || !(hitEntity instanceof Player)) return;
+    if (!(damagingEntity instanceof Player) || damagingEntity.hasTag("admin") || !(hitEntity instanceof Player)) return;
     if (world.scoreboard.getObjective('oac:anti-autoclicker-enabled')) antiAutoClicker(damagingEntity);
     if (world.scoreboard.getObjective('oac:anti-killaura-enabled')) antiKillAura(damagingEntity, hitEntity);
 });
 
-world.afterEvents.entityDie.subscribe((event) => {
-    if (!world.scoreboard.getObjective('oac:death-coordinates-enabled')) return;
-
-    const { deadEntity } = event;
-
-    if (!(deadEntity instanceof Player)) {
-        return;
-    }
-
-    const { x, y, z } = deadEntity.location;
-
-    deadEntity.sendMessage(`You died at §c${Math.round(x)} §a${Math.round(y)} §b${Math.round(z)} §rin ${deadEntity.dimension.id.replace("minecraft:", "")}`);
-});
-
 const checkSpam = (player, behavior) => {
-    world.sendMessage(`§4${player.name}§c has detected ${behavior}`);
-    player.triggerEvent("run:kick");
+    world.sendMessage(`§4§l§¶${player.name}§c has detected ${behavior}`);
+    player.runCommandAsync(`kick ${player.name} §l§c§¶You have been kicked for ${behavior}`);
 };
 
 world.afterEvents.chatSend.subscribe(({ sender: player, message }) => {
 
-    if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.isOp()) return;
+    if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.hasTag("admin")) return;
 
     const spamKey = `${player.id}-spamData`;
     const data = playerData.get(spamKey) || { lastMessageTimes: [], warnings: 0 };
@@ -225,8 +224,8 @@ world.afterEvents.chatSend.subscribe(({ sender: player, message }) => {
     if (player.hasTag('two')) checkSpam(player, "sending messages while using an item");
 
     if (config.blacklistedMessages.some((word) => message.includes(word))) {
-        player.triggerEvent("run:kick");
-        world.sendMessage(`§4${player.name}§c has been kicked for saying ${message} a blacklisted message`);
+        player.runCommandAsync(`kick ${player.name} §l§c§¶You have been kicked for saying ${message} a blacklisted message`);
+        world.sendMessage(`§4§l§¶${player.name}§c has been kicked for saying ${message} a blacklisted message`);
         return;
     }
 
@@ -249,7 +248,7 @@ const antiSpam = (player, data, spamKey) => {
     data.warnings++;
 
     if (data.warnings <= config.antiSpam.kickThreshold) {
-        player.sendMessage(`§cPlease send messages slowly!\n§8 Warning ${data.warnings} out of ${config.antiSpam.kickThreshold}`);
+        player.sendMessage(`§c§l§¶Please send messages slowly\n§8§l§¶ Warning ${data.warnings} out of ${config.antiSpam.kickThreshold}`);
     }
 
     system.runTimeout(() => {
@@ -258,27 +257,53 @@ const antiSpam = (player, data, spamKey) => {
     }, config.antiSpam.timeout);
 
     if (data.warnings > config.antiSpam.kickThreshold) {
-        player.triggerEvent("run:kick");
-        world.sendMessage(`§4${player.name}§c has been kicked for spamming`);
+        player.runCommandAsync(`kick ${player.name} §l§c§¶You have been kicked for spamming`);
+        world.sendMessage(`§4§l§¶${player.name}§c has been kicked for spamming`);
     }
 };
 
 world.beforeEvents.chatSend.subscribe((event) => {
     const { message: message, sender: player } = event;
 
-    if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.isOp()) return;
+    if (world.scoreboard.getObjective("oac:muteList").getParticipants().find(p => p.displayName === player.name)) {
+        event.cancel = true;
+        player.sendMessage(`§c§l§¶You are muted`);
+    }
+
+    if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.hasTag("admin")) return;
 
     if (message.length > config.antiSpam.maxCharacterLimit) {
         event.cancel = true;
-        player.sendMessage(`§cYour message is too long!\n§8The maximum length is ${config.antiSpam.maxCharacterLimit} characters`);
+        player.sendMessage(`§c§l§¶Your message is too long\n§8§l§¶The maximum length is ${config.antiSpam.maxCharacterLimit} characters`);
     } else if (config.chatFilter.some((word) => message.toLowerCase().includes(word))) {
         event.cancel = true;
-        player.sendMessage(`§cYour message contains a filtered word`);
+        player.sendMessage(`§c§l§¶Your message contains a filtered word`);
     }
 });
 
+world.afterEvents.playerSpawn.subscribe(({ player }) => {
+    const banlist = world.scoreboard.getObjective("oac:banList");
+    const banlistParticipants = banlist.getParticipants();
+    if (banlistParticipants.find(p => p.displayName === player.name)) return;
+    player.runCommandAsync(`kick ${player.name} §l§c§¶You are banned from this server`);
+});
+
+world.afterEvents.entityDie.subscribe((event) => {
+    if (!world.scoreboard.getObjective('oac:death-coordinates-enabled')) return;
+
+    const { deadEntity } = event;
+
+    if (!(deadEntity instanceof Player)) {
+        return;
+    }
+
+    const { x, y, z } = deadEntity.location;
+
+    deadEntity.sendMessage(`You died at §c${Math.round(x)} §a${Math.round(y)} §b${Math.round(z)} §rin ${deadEntity.dimension.id.replace("minecraft:", "")}`);
+});
+
 world.afterEvents.itemUse.subscribe(({ itemStack: item, source: player }) => {
-    if (player.typeId === "minecraft:player" && player.isOp() && item.typeId === "minecraft:chorus_fruit") {
+    if (player.typeId === "minecraft:player" && player.hasTag("admin") && item.typeId === "minecraft:chorus_fruit") {
         mainMenu(player);
     }
 });
