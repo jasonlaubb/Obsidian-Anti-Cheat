@@ -1,57 +1,57 @@
 {
-  "format_version": 2,
-  "header": {
-    "name": "§uObsidian Anti Cheat",
-    "description": "§7Official v1.20.15",
-    "uuid": "3a84cadf-c65b-4ab5-b02b-3919806e1942",
-    "version": [
-      1,
-      0,
-      0
-    ],
-    "min_engine_version": [
-      1,
-      20,
-      10
-    ]
-  },
-  "modules": [
-    {
-      "type": "data",
-      "uuid": "1556f669-c7bd-4a84-92d0-a02c13ced097",
-      "version": [
-        1,
-        0,
-        0
-      ]
-    },
-    {
-      "type": "script",
-      "language": "javascript",
-      "uuid": "80743738-74ab-4cfb-be10-fca0e1bbaf6c",
-      "version": [
-        0,
-        0,
-        1
-      ],
-      "entry": "scripts/index.js"
-    }
+ "format_version": 2,
+ "header": {
+  "name": "§uObsidian Anti Cheat",
+  "description": "§7Official v1.20.15",
+  "uuid": "3a84cadf-c65b-4ab5-b02b-3919806e1942",
+  "version": [
+   1,
+   0,
+   0
   ],
-  "metadata": {
-    "authors": [
-      "ravriv",
-      "license": "AGPLv3",
-      "https://github.com/ravriv/Obsidian-Anti-Cheat"
-    ]
-  },
-  "dependencies": [
-    {
-      "module_name": "@minecraft/server",
-      "version": "1.4.0-beta"
-    },
-    {
-      "module_name": "@minecraft/server-ui",
-      "version": "1.2.0-beta"
-    }
+  "min_engine_version": [
+   1,
+   20,
+   10
   ]
+ },
+ "modules": [
+  {
+   "type": "data",
+   "uuid": "1556f669-c7bd-4a84-92d0-a02c13ced097",
+   "version": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "type": "script",
+   "language": "javascript",
+   "uuid": "80743738-74ab-4cfb-be10-fca0e1bbaf6c",
+   "version": [
+    0,
+    0,
+    1
+   ],
+   "entry": "scripts/index.js"
+  }
+ ],
+ "metadata": {
+  "authors": [
+   "ravriv"
+  ],
+  "license": "AGPLv3",
+  "url": "https://github.com/ravriv/Obsidian-Anti-Cheat"
+ },
+ "dependencies": [
+  {
+   "module_name": "@minecraft/server",
+   "version": "1.4.0-beta"
+  },
+  {
+   "module_name": "@minecraft/server-ui",
+   "version": "1.2.0-beta"
+  }
+ ]
 }
