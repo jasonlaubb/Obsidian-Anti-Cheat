@@ -60,15 +60,6 @@
     "minecraft:spell_effects": {
      "remove_effects": "bad_omen"
     }
-   },
-   "kick": {
-    "minecraft:explode": {
-     "fuse_length": 0,
-     "fuse_lit": true,
-     "power": 0.5,
-     "causes_fire": false,
-     "breaks_blocks": false
-    }
    }
   },
   "components": {
@@ -253,13 +244,6 @@
     "remove": {
      "component_groups": [
       "minecraft:raid_trigger"
-     ]
-    }
-   },
-   "run:kick": {
-    "add": {
-     "component_groups": [
-      "kick"
      ]
     }
    }
