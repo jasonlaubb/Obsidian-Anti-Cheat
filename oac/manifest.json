@@ -2,8 +2,8 @@
   "format_version": 2,
   "header": {
     "name": "§uObsidian Anti Cheat",
-    "description": "§71.20.15",
-    "uuid": "4c1004cf-9924-409b-867f-a2c33439c892",
+    "description": "§7Official v1.20.15",
+    "uuid": "3a84cadf-c65b-4ab5-b02b-3919806e1942",
     "version": [
       1,
       0,
@@ -18,7 +18,7 @@
   "modules": [
     {
       "type": "data",
-      "uuid": "c4912d17-c0d7-45a5-b962-e9c7453ca770",
+      "uuid": "1556f669-c7bd-4a84-92d0-a02c13ced097",
       "version": [
         1,
         0,
@@ -28,7 +28,7 @@
     {
       "type": "script",
       "language": "javascript",
-      "uuid": "c7c16f6e-b6fb-45a5-a62d-8607cff459b8",
+      "uuid": "80743738-74ab-4cfb-be10-fca0e1bbaf6c",
       "version": [
         0,
         0,
@@ -39,7 +39,9 @@
   ],
   "metadata": {
     "authors": [
-      "https://mcpedl.com/user/ravriv"
+      "ravriv",
+      "license": "AGPLv3",
+      "https://github.com/ravriv/Obsidian-Anti-Cheat"
     ]
   },
   "dependencies": [
