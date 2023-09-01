@@ -1,7 +1,7 @@
 const config = {
 
     antiAutoClicker: {
-        maxClicksPerSecond: 22, // based on my testing, 22 is the max clicks per second that a player can do
+        maxClicksPerSecond: 30, // Max
         cpsCooldownDuration: 1000, // 1 seconds = 1000 milliseconds
         timeout: 200 // 5 seconds = 200 ticks, pvp-off tag will be removed after 5 seconds
     },
