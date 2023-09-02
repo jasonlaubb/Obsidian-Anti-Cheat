@@ -184,21 +184,37 @@ const antiKillAura = (damagingEntity, hitEntity) => {
 const antiAutoClicker = (player) => {
     const currentTime = Date.now();
     const clickKey = `${player.id}-clickData`;
-    const lastData = playerData.get(clickKey) || { lastClickTime: 0, cpsCooldown: null };
+    const lastData = playerData.get(clickKey) || { lastClickTime: 0, cpsHistory: [] };
 
     const lastClickTime = lastData.lastClickTime;
-    const cpsCooldown = lastData.cpsCooldown;
+    const cpsHistory = lastData.cpsHistory;
 
-    if (!player.hasTag("pvp-off") && lastClickTime && currentTime - lastClickTime < 50 && config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime) >= config.antiAutoClicker.maxClicksPerSecond) {
-        player.addTag("pvp-off");
-        const cps = config.antiAutoClicker.cpsCooldownDuration / (currentTime - lastClickTime);
-        world.sendMessage(`§u§l§¶OAC >§4 ${player.name}§c has detected using Auto Clicker\n§r§l§¶CPS: ${cps.toFixed(2)}`);
+    if (lastClickTime && currentTime - lastClickTime > 1) {
+        const timeBetweenClicks = currentTime - lastClickTime;
+        const cps = 1000 / timeBetweenClicks;
+
+        if (isFinite(cps)) {
+            cpsHistory.push(cps);
+
+            if (cpsHistory.length > 5) {
+                cpsHistory.shift();
+            }
+
+            const averageCPS = cpsHistory.reduce((acc, val) => acc + val, 0) / cpsHistory.length;
+
+            if (averageCPS > config.antiAutoClicker.maxClicksPerSecond && !player.hasTag("pvp-off")) {
+                player.addTag("pvp-off");
+                playerData.set(clickKey, { lastClickTime: currentTime, cpsHistory: [] });
+                world.sendMessage(`§u§l§¶OAC >§4 ${player.name}§c has detected using Auto Clicker\n§r§l§¶CPS: ${averageCPS.toFixed(2)}`);
+
+                system.runTimeout(() => {
+                    player.removeTag("pvp-off");
+                }, config.antiAutoClicker.timeout);
+            }
+        }
     }
 
-    playerData.set(clickKey, { lastClickTime: currentTime, cpsCooldown });
-
-    if (cpsCooldown) system.clearRun(cpsCooldown);
-    playerData.get(clickKey).cpsCooldown = system.runTimeout(() => player.removeTag("pvp-off"), config.antiAutoClicker.timeout);
+    playerData.set(clickKey, { lastClickTime: currentTime, cpsHistory });
 };
 
 world.afterEvents.entityHitEntity.subscribe(({ damagingEntity, hitEntity }) => {
