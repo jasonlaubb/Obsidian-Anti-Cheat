@@ -1,9 +1,8 @@
 const config = {
 
     antiAutoClicker: {
-        maxClicksPerSecond: 30, // Max
-        cpsCooldownDuration: 1000, // 1 seconds = 1000 milliseconds
-        timeout: 200 // 5 seconds = 200 ticks, pvp-off tag will be removed after 5 seconds
+        maxClicksPerSecond: 22,
+        timeout: 400 // 10 seconds = 400 ticks, pvp-off tag will be removed after 5 seconds
     },
 
     antiKillAura: {
