@@ -165,7 +165,7 @@ const isAttackerOutOfTargetView = (attacker, target) => {
             (target.location.z - attacker.location.z) ** 2
         );
 
-        return angleInDegrees > config.antiKillAura.minAngle && distance >= 2;
+        return angleInDegrees > config.antiKillAura.minAngle && distance >= 4;
     }
     return false;
 };
@@ -280,13 +280,22 @@ const antiSpam = (player, data, spamKey) => {
 
 world.beforeEvents.chatSend.subscribe((event) => {
     const { message: message, sender: player } = event;
-
+    
     if (world.scoreboard.getObjective("oac:muteList").getParticipants().find(p => p.displayName === player.name)) {
         event.cancel = true;
         player.sendMessage(`§c§l§¶You are muted`);
     }
 
     if (!world.scoreboard.getObjective('oac:anti-spam-enabled') || player.hasTag("admin")) return;
+
+    const lastMessageKey = `${player.id}-lastMessage`;
+  
+    if (playerData.has(lastMessageKey) && playerData.get(lastMessageKey) === message) {
+      event.cancel = true;
+      player.sendMessage('§c§l§¶You cannot send the same message again');
+    } else {
+      playerData.set(lastMessageKey, message);
+    }
 
     if (message.length > config.antiSpam.maxCharacterLimit) {
         event.cancel = true;
