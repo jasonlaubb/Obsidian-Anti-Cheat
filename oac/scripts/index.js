@@ -235,7 +235,6 @@ world.afterEvents.chatSend.subscribe(({ sender: player, message }) => {
     const spamKey = `${player.id}-spamData`;
     const data = playerData.get(spamKey) || { lastMessageTimes: [], warnings: 0 };
 
-    if (player.hasTag('five') && player.isOnGround && !player.isJumping) checkSpam(player, "sending messages while moving");
     if (player.hasTag('one') && !player.getEffect("mining_fatigue")) checkSpam(player, "sending messages while swinging their hand");
     if (player.hasTag('two')) checkSpam(player, "sending messages while using an item");
 
