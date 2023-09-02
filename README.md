@@ -6,7 +6,7 @@
 
 <p align="center">Updated for 1.20.15</p>
 <p align="center">
-Obsidian Anti Cheat (OAC) is a Simple designed to prevent cheating and enforce fair gameplay on Minecraft Bedrock Realms, Worlds, and Servers. It is built Simple and No Watermark using Javascript and Json and provides powerful features to detect and handle various forms of cheating., but it was created simple. We're all about fairness, and that's why we operate under the AGPL-3.0 license.
+Obsidian Anti Cheat (OAC) is a Simple designed to prevent cheating and enforce fair gameplay on Minecraft Bedrock Realms, Worlds, and Servers. It is built Simple and No Watermark using Javascript and Json and provides powerful features to detect and handle various forms of cheating. We're all about fairness, and that's why we operate under the AGPL-3.0 license.
 </p>
 
 <hr>
