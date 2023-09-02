@@ -282,9 +282,8 @@ world.beforeEvents.chatSend.subscribe((event) => {
 });
 
 world.afterEvents.playerSpawn.subscribe(({ player }) => {
-    const banlist = world.scoreboard.getObjective("oac:banList");
-    const banlistParticipants = banlist.getParticipants();
-    if (banlistParticipants.find(p => p.displayName === player.name)) return;
+    const banlist = world.scoreboard.getObjective("oac:banList").getParticipants();
+    if (banlist.find(p => p.displayName === player.name)) return;
     player.runCommandAsync(`kick ${player.name} §l§c§¶You are banned from this server`);
 });
 
