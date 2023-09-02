@@ -3,7 +3,7 @@
  "header": {
   "name": "§uObsidian Anti Cheat",
   "description": "§7Official v1.20.15",
-  "uuid": "3a84cadf-c65b-4ab5-b02b-3919806e1942",
+  "uuid": "2e9c58c5-89cc-44c4-86f1-c36939611671",
   "version": [
    1,
    0,
@@ -18,7 +18,7 @@
  "modules": [
   {
    "type": "data",
-   "uuid": "1556f669-c7bd-4a84-92d0-a02c13ced097",
+   "uuid": "0d01f99b-c068-4ad9-ab80-5ebc08940e59",
    "version": [
     1,
     0,
@@ -28,7 +28,7 @@
   {
    "type": "script",
    "language": "javascript",
-   "uuid": "80743738-74ab-4cfb-be10-fca0e1bbaf6c",
+   "uuid": "8591e5c6-7519-410a-b10e-9d43a884a86c",
    "version": [
     0,
     0,
